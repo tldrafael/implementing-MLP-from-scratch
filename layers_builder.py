@@ -1,3 +1,6 @@
+import numpy as np
+import utils
+
 # Layer class is a map function which vinculates the *m* units from the layer (l) and link each one to the *n* units from the layer (l+1)
 # the Weight matrix is composed as: rows -> units from Layer(l+1) ; columns -> units from Layer (l)
 class Layer:
@@ -23,7 +26,7 @@ class Layer:
         self.d = self.initialize_vector(n_units_current + bias)
         
         # gradient error vector
-        self.g = self.initialize_vector(n_units_current + bias)
+        self.g = self.initialize_vector(self.W.shape)
     
     
     def initialize_weights(self):
@@ -41,12 +44,17 @@ class Layer:
     
 
     def set_activation(self):
-        self.a = Utils.fun_sigmoid(self.z)
+        self.a = utils.fun_sigmoid(self.z)
         if self.bias: self.add_activation_bias()
 
     
     def add_activation_bias(self):
         self.a = np.hstack((self.a, 1))
+
+
+    def update_weights(self, r):
+        self.W += -(r*self.g)
+
 
         
     def print_layer(self):
@@ -60,23 +68,47 @@ class Layer:
 
         
 # the layer output is an exception case of the Layer class   
+## No bias, and no Weight matrix
 class LayerOutput(Layer):
         def __init__(self, n_units_current):
             Layer.__init__(self, n_units_current, n_units_next=None, bias=False)
+            self.g = []
 
+
+
+# the layer output is an exception case of the Layer class   
+## No summation vector
+class LayerInput(Layer):
+        def __init__(self, n_units_current, n_units_next=None, bias=True):
+            Layer.__init__(self, n_units_current, n_units_next, bias)
+            self.z = []
+
+
+
+# the hidden layer must have a link between the current units to next units
+class LayerHidden(Layer):
+        def __init__(self, n_units_current, n_units_next, bias=True):
+            Layer.__init__(self, n_units_current, n_units_next, bias)
 
 
 
     
-def net_constructer()
+def net_constructer(layers_dim):
     if (len(layers_dim) < 2):
         sys.exit("Neural Net must have at least 2 layers")
         
+
     net = []
     # first stage: create input and hidden layers
     for i in np.arange(len(layers_dim) - 1, dtype=int):
-        l = Layer(layers_dim[i], layers_dim[i+1])
+        if (i == 0):
+            l = LayerInput(layers_dim[i], layers_dim[i+1], bias=True)
+            net.append(l)
+            continue
+
+        l = LayerHidden(layers_dim[i], layers_dim[i+1], bias=True)
         net.append(l)
+
 
     # second stage: create output layer
     l = LayerOutput(layers_dim[-1])
@@ -84,3 +116,7 @@ def net_constructer()
     
     return net
     
+
+
+
+
