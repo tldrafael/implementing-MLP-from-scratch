@@ -5,8 +5,9 @@ import utils
 # the Weight matrix is composed as: rows -> units from Layer(l+1) ; columns -> units from Layer (l)
 class Layer:
     
-    def __init__(self, n_units_current, n_units_next=None, bias=True):
+    def __init__(self, n_units_current, n_units_next, bias, layer_id):
        
+        self.layer_id = layer_id
         self.n_units_current = n_units_current
         self.n_units_next = n_units_next
         self.bias = bias
@@ -23,19 +24,21 @@ class Layer:
         self.W = self.initialize_weights()        
         
         # delta-error vector
-        self.d = self.initialize_vector(n_units_current + bias)
+        self.d = self.initialize_vector(bias + n_units_current)
         
         # gradient error vector
         self.g = self.initialize_vector(self.W.shape)
-    
+
+
+
     
     def initialize_weights(self):
         # case there's none next layer as the output layer, also there's no Weight matrix
         if( self.n_units_next == None):
             return np.array([])
         
-        weights = np.random.randn(self.n_units_next * (self.n_units_current + self.bias))
-        weights = weights.reshape(self.n_units_next, self.n_units_current + self.bias)
+        weights = np.random.randn(self.n_units_next * (self.bias + self.n_units_current ))
+        weights = weights.reshape(self.n_units_next, self.bias + self.n_units_current)
         return weights
         
     
@@ -49,11 +52,12 @@ class Layer:
 
     
     def add_activation_bias(self):
-        self.a = np.hstack((self.a, 1))
+        self.a = np.hstack((1, self.a))
 
 
     def update_weights(self, r):
         self.W += -(r*self.g)
+
 
 
         
