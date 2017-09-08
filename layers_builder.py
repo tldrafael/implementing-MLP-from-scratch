@@ -77,28 +77,27 @@ class Layer:
 
         
 # the layer output is an exception case of the Layer class   
-## No bias, and no Weight matrix
-class LayerOutput(Layer):
-        def __init__(self, n_units_current):
-            Layer.__init__(self, n_units_current, n_units_next=None, bias=False)
-            self.g = []
-
-
-
-# the layer output is an exception case of the Layer class   
 ## No summation vector
 class LayerInput(Layer):
-        def __init__(self, n_units_current, n_units_next=None, bias=True):
-            Layer.__init__(self, n_units_current, n_units_next, bias)
+        def __init__(self, n_units_current, n_units_next=None, bias=True, layer_id=0):
+            Layer.__init__(self, n_units_current, n_units_next, bias, layer_id)
             self.z = []
-
 
 
 # the hidden layer must have a link between the current units to next units
 class LayerHidden(Layer):
-        def __init__(self, n_units_current, n_units_next, bias=True):
-            Layer.__init__(self, n_units_current, n_units_next, bias)
+        def __init__(self, n_units_current, n_units_next, bias=True, layer_id=None):
+            Layer.__init__(self, n_units_current, n_units_next, bias, layer_id)
 
+
+
+# the layer output is an exception case of the Layer class   
+## No bias, and no Weight matrix
+class LayerOutput(Layer):
+        def __init__(self, n_units_current, layer_id):
+            Layer.__init__(self, n_units_current, n_units_next=None, bias=False, layer_id=None)
+            self.g = []
+            self.ga = []
 
 
     
@@ -115,12 +114,12 @@ def net_constructer(layers_dim):
             net.append(l)
             continue
 
-        l = LayerHidden(layers_dim[i], layers_dim[i+1], bias=True)
+        l = LayerHidden(layers_dim[i], layers_dim[i+1], bias=True, layer_id=i)
         net.append(l)
 
 
     # second stage: create output layer
-    l = LayerOutput(layers_dim[-1])
+    l = LayerOutput(layers_dim[-1], layer_id=len(layers_dim))
     net.append(l)
     
     return net
