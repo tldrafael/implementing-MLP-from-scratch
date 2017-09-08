@@ -1,5 +1,7 @@
 import layers_builder
 import numpy as np
+import utils
+import sys
 
 class NeuralNet:
         
@@ -13,6 +15,9 @@ class NeuralNet:
         self.ll_history = []
         self.mse = None
         self.ll = None
+
+        self.data_X = None
+        self.data_Y = None
         
     
     
@@ -67,7 +72,7 @@ class NeuralNet:
         ## 2nd, a standard computation to get the hidden layers errors
         
         # output layer
-        activation_error = -(y_norm[self.idx] - self.net[self.layer_out_id].a)
+        activation_error = -(self.Y[self.idx] - self.net[self.layer_out_id].a)
         activation_derivative = utils.fun_sigmoid_derivative(self.net[self.layer_out_id].a)
         self.net[self.layer_out_id].d = np.multiply(activation_error, activation_derivative)
 
@@ -137,7 +142,7 @@ class NeuralNet:
         for i in np.arange(0, self.layer_out_id + 1, dtype=int):
             # the first layer receive the input
             if( i == 0 ):
-                self.net[i].a[1:] = X_norm[self.idx, :].transpose()
+                self.net[i].a[1:] = self.X[self.idx, :].transpose()
                 continue
                 
             self.net[i].z = self.net[i-1].W.dot(self.net[i-1].a)
@@ -145,7 +150,10 @@ class NeuralNet:
         
 
 
-    def train(self, r, iterations):
+    def train(self, X, Y, r, iterations):
+        self.X = X
+        self.Y = Y
+
         for i in np.arange(iterations):
             idx = np.random.choice(np.random.randint(0, 1000, 1000), 1)
             idx = np.asscalar(idx)
@@ -174,8 +182,8 @@ class NeuralNet:
     
     def train_fitted(self):
         train_fitted = np.array(([]))
-        for i in np.arange(X_norm.shape[0], dtype=int):
-            p = self.predict(X_norm[i])
+        for i in np.arange(self.X.shape[0], dtype=int):
+            p = self.predict(self.X[i])
             p = np.round(p)
             train_fitted = np.append(train_fitted, p)
         
@@ -184,15 +192,15 @@ class NeuralNet:
     
     
     def mean_squared_error(self):
-        h = self.predict(X_norm[self.idx, :])
-        y = y_norm[self.idx]
+        h = self.predict(self.X[self.idx, :])
+        y = self.Y[self.idx]
         self.mse = 0.5*np.power(y - h, 2)
         
         
     
     def log_likelihood(self):
-        h = self.predict(X_norm[self.idx, :])
-        y = y_norm[self.idx]
+        h = self.predict(self.X[self.idx, :])
+        y = self.Y[self.idx]
         self.ll = y*log(h) + (1-y)*log(1-h)
         
 
