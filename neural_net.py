@@ -3,14 +3,18 @@ import numpy as np
 import utils
 import sys
 
+
 class NeuralNet:
         
-    def __init__(self,  layers_dim):
+    def __init__(self,  layers_dim, batch_size):
         self.layers_dim = layers_dim
         self.layer_out_id = len(layers_dim) - 1
-        self.idx = 0
+        self.batch_size = batch_size
+        self.idx = None
+
         
-        self.net = layers_builder.net_constructer(layers_dim)
+        #import pdb; pdb.set_trace();
+        self.net = layers_builder.net_constructer(self.layers_dim, self.batch_size)
         self.err_history = []
         self.ll_history = []
         self.mse = None
@@ -18,7 +22,8 @@ class NeuralNet:
 
         self.data_X = None
         self.data_Y = None
-        
+        self.data_X_batch = None
+
     
     
     def compute_gradient_approximation(self, i, weight_shift=1e-4):
@@ -27,6 +32,7 @@ class NeuralNet:
             for i_w in np.arange(W_shape[0]):
                 # shift to minus limit
                 self.net[i].W[i_w, j_w] = self.net[i].W[i_w, j_w] - weight_shift
+                self.feed_forward_NN()
                 self.mean_squared_error()
                 mse_shift_negative = self.mse
 
@@ -35,6 +41,7 @@ class NeuralNet:
 
                 # shift to plus limit
                 self.net[i].W[i_w, j_w] = self.net[i].W[i_w, j_w] + weight_shift
+                self.feed_forward_NN()
                 self.mean_squared_error()
                 mse_shift_positive = self.mse
 
@@ -53,7 +60,7 @@ class NeuralNet:
         # now do the same manually
         for i in np.arange(0, self.layer_out_id, dtype=int)[::-1]:
             self.compute_gradient_approximation(i)
-            check = self.net[i].check_gradient_computation(rtol=0.25)
+            check = self.net[i].check_gradient_computation(rtol=1)
             
             if not check:
                 print "g:"
@@ -125,8 +132,10 @@ class NeuralNet:
 
             
             self.net[i].g = layer_next_error_vector.dot(layer_cur_activ_vector.transpose()) 
+            # normalize by batch size
+            self.net[i].g = self.net[i].g / self.batch_size
             
-            
+    
     
     def update_weights(self, r, check_grad=False):
         # get gradient error for each weight
@@ -138,7 +147,6 @@ class NeuralNet:
     
     
     def feed_forward_NN(self):
-        
         for i in np.arange(0, self.layer_out_id + 1, dtype=int):
             # the first layer receive the input
             if( i == 0 ):
@@ -150,14 +158,27 @@ class NeuralNet:
         
 
 
-    def train(self, X, Y, r, iterations):
+    def train(self, X, Y, r, iterations, shuffle=False):
         self.X = X
         self.Y = Y
+        
+        # order to roll over the samples
+        X_ids_order = np.arange(self.X.shape[0], dtype=int)
+        if shuffle:
+            np.random.shuffle(X_ids_order)
 
+        # no. of iterations to get an epoch
+        itr_to_epoch = self.X.shape[0] / self.batch_size
+        j = 0
         for i in np.arange(iterations):
-            idx = np.random.choice(np.random.randint(0, 1000, 1000), 1)
-            idx = np.asscalar(idx)
-            self.idx = idx
+            self.idx = X_ids_order[(j*self.batch_size):((j+1)*self.batch_size)]
+
+            # mark position into data chunks
+            j = j + 1
+            if j >= itr_to_epoch:
+                j = 0
+
+            
             self.feed_forward_NN()
             self.update_weights(r)
             
@@ -166,17 +187,22 @@ class NeuralNet:
                 
                 
     
-    
     def predict(self, x_i):
+        # n_predictions control the size of the matrix which is to work
+        if len(x_i.shape) == 1:
+            x_i = np.expand_dims(x_i, 1)
+
+        n_predictions = x_i.shape[1]
+
         for i in np.arange(0, self.layer_out_id + 1, dtype=int):
             if( i == 0 ):
-                self.net[i].a[1:] = x_i.transpose()
+                self.net[i].a[1:, :n_predictions] = x_i
                 continue
             
-            self.net[i].z = self.net[i-1].W.dot(self.net[i-1].a)
+            self.net[i].z[:, :n_predictions] = self.net[i-1].W.dot(self.net[i-1].a[:, :n_predictions])
             self.net[i].set_activation()
         
-        return self.net[self.layer_out_id ].a
+        return self.net[self.layer_out_id].a[:, :n_predictions]
     
     
     
@@ -189,12 +215,15 @@ class NeuralNet:
         
         return train_fitted
     
-    
+
     
     def mean_squared_error(self):
-        h = self.predict(self.X[self.idx, :])
+        h = self.net[self.layer_out_id].a
         y = self.Y[self.idx]
         self.mse = 0.5*np.power(y - h, 2)
+        # normalize by batch_size
+        self.mse = np.sum(self.mse) / self.batch_size
+
         
         
     
@@ -202,5 +231,6 @@ class NeuralNet:
         h = self.predict(self.X[self.idx, :])
         y = self.Y[self.idx]
         self.ll = y*log(h) + (1-y)*log(1-h)
-        
+        # normalize by batch_size
+        self.ll = np.sum(self.ll) / self.batch_size
 

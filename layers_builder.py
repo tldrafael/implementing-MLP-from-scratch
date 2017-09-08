@@ -5,6 +5,8 @@ import utils
 # the Weight matrix is composed as: rows -> units from Layer(l+1) ; columns -> units from Layer (l)
 class Layer:
     
+    batch_size = None
+
     def __init__(self, n_units_current, n_units_next, bias, layer_id):
        
         self.layer_id = layer_id
@@ -13,18 +15,18 @@ class Layer:
         self.bias = bias
         
         # summation vector
-        self.z = self.initialize_vector(n_units_current)
+        self.z = self.initialize_vector((self.n_units_current, Layer.batch_size))
                 
         # activation vector
         ## just inialize the vector, afterwards process as actual activation
-        self.a = self.initialize_vector(n_units_current)
+        self.a = self.initialize_vector((self.n_units_current, Layer.batch_size))
         self.set_activation()        
         
         # weight matrix that connect units from current layer to next layer
         self.W = self.initialize_weights()        
         
         # delta-error vector
-        self.d = self.initialize_vector(bias + n_units_current)
+        self.d = self.initialize_vector((self.bias + self.n_units_current, Layer.batch_size))
         
         # gradient error vector
         self.g = self.initialize_vector(self.W.shape)
@@ -42,23 +44,31 @@ class Layer:
         weights = np.random.randn(self.n_units_next * (self.bias + self.n_units_current ))
         weights = weights.reshape(self.n_units_next, self.bias + self.n_units_current)
         return weights
+
         
     
     def initialize_vector(self, n_dimensions):
         return np.random.normal(size=n_dimensions)
+
     
 
     def set_activation(self):
         self.a = utils.fun_sigmoid(self.z)
         if self.bias: self.add_activation_bias()
 
+
     
     def add_activation_bias(self):
-        self.a = np.hstack((1, self.a))
+        if len(self.a.shape) == 1:
+            self.a = np.vstack((1, self.a))
+        else:
+            self.a = np.vstack((np.ones(self.a.shape[1]), self.a))
+
 
 
     def update_weights(self, r):
         self.W += -(r*self.g)
+
 
 
     def check_gradient_computation(self, rtol=1e-3):
@@ -101,10 +111,11 @@ class LayerOutput(Layer):
 
 
     
-def net_constructer(layers_dim):
+def net_constructer(layers_dim, batch_size):
     if (len(layers_dim) < 2):
         sys.exit("Neural Net must have at least 2 layers")
-        
+    
+    Layer.batch_size = batch_size    
 
     net = []
     # first stage: create input and hidden layers
