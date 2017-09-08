@@ -29,6 +29,8 @@ class Layer:
         # gradient error vector
         self.g = self.initialize_vector(self.W.shape)
 
+        # gradient approximation vector
+        self.ga = self.initialize_vector(self.g.shape)
 
 
     
@@ -58,6 +60,9 @@ class Layer:
     def update_weights(self, r):
         self.W += -(r*self.g)
 
+
+    def check_gradient_computation(self, rtol=1e-3):
+        return np.allclose(self.g, self.ga, rtol=rtol)
 
 
         
