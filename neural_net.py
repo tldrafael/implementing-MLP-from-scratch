@@ -158,7 +158,8 @@ class NeuralNet:
         
 
 
-    def train(self, X, Y, r, iterations, shuffle=False):
+    # CG = Check Gradient
+    def train(self, X, Y, r, iterations, shuffle=False, CG=True):
         self.X = X
         self.Y = Y
         
@@ -182,7 +183,7 @@ class NeuralNet:
             self.feed_forward_NN()
             self.update_weights(r)
             
-            if i < 5 :
+            if CG and i < 5 :
                 self.check_gradient_computation()
                 
                 
