@@ -83,7 +83,6 @@ class NeuralNet:
         activation_derivative = utils.fun_sigmoid_derivative(self.net[self.layer_out_id].a)
         self.net[self.layer_out_id].d = np.multiply(activation_error, activation_derivative)
 
-        
         # hidden layers
         for i in np.arange(1, self.layer_out_id, dtype=int)[::-1]:
             # the (-) exclude the row with the pior error that was directed to bias
@@ -91,20 +90,9 @@ class NeuralNet:
             if self.net[i+1].bias: 
                 d_next = d_next[1:]
             
-            # check if dimensions are adjusted
-            if ( len(d_next.shape) == 1):
-                d_next = np.expand_dims(d_next, 1)
             
             d_activation = self.net[i].W.transpose().dot(d_next)
             summation_derivative = utils.fun_sigmoid_derivative(self.net[i].a)
-            
-            # check if dimensions are adjusted
-            if ( len(d_activation.shape) == 1):
-                d_activation = np.expand_dims(d_activation, -1)
-            if ( len(summation_derivative.shape) == 1):
-                summation_derivative = np.expand_dims(summation_derivative, -1)
-            
-
             self.net[i].d = np.multiply(d_activation, summation_derivative)
             
             
@@ -115,21 +103,12 @@ class NeuralNet:
         
         # hidden layers
         for i in np.arange(0, self.layer_out_id, dtype=int)[::-1]:
-
             layer_cur_activ_vector = self.net[i].a
             layer_next_error_vector = self.net[i+1].d
             
             # if layer next (l+1) has bias, remove its error row
             if self.net[i+1].bias: 
                 layer_next_error_vector = layer_next_error_vector[1:]
-            
-            
-            # check if dimensions are adjusted
-            if ( len(layer_cur_activ_vector.shape) == 1):
-                layer_cur_activ_vector = np.expand_dims(layer_cur_activ_vector, 1)
-            if ( len(layer_next_error_vector.shape) == 1):
-                layer_next_error_vector = np.expand_dims(layer_next_error_vector, 1)
-
             
             self.net[i].g = layer_next_error_vector.dot(layer_cur_activ_vector.transpose()) 
             # normalize by batch size
@@ -140,7 +119,7 @@ class NeuralNet:
     def update_weights(self, r, check_grad=False):
         # get gradient error for each weight
         self.compute_gradients_errors()
-        
+
         for i in np.arange(0, self.layer_out_id, dtype=int)[::-1]:
             self.net[i].update_weights(r)
        
