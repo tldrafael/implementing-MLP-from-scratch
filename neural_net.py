@@ -9,11 +9,12 @@ class NeuralNet:
     def __init__(self,  layers_dim, batch_size):
         self.layers_dim = layers_dim
         self.layer_out_id = len(layers_dim) - 1
+        self.batch_size = batch_size
         self.net = layers_builder.net_constructer(self.layers_dim, self.batch_size)
+        self.objective = None
         
         self.data_X = None
         self.data_Y = None
-        self.batch_size = batch_size
         self.idx = None
         self.data_X_batch = None
         
@@ -73,7 +74,7 @@ class NeuralNet:
         ## 2nd, a standard computation to get the hidden layers errors
         
         # output layer
-        activation_error = -(self.Y[self.idx] - self.net[self.layer_out_id].a)
+        activation_error = -(self.data_Y[self.idx] - self.net[self.layer_out_id].a)
 
         activation_derivative = utils.fun_sigmoid_derivative(self.net[self.layer_out_id].a)
         self.net[self.layer_out_id].d = np.multiply(activation_error, activation_derivative)
@@ -124,7 +125,7 @@ class NeuralNet:
         for i in np.arange(0, self.layer_out_id + 1, dtype=int):
             # the first layer receive the input
             if( i == 0 ):
-                self.net[i].a[1:] = self.X[self.idx, :].transpose()
+                self.net[i].a[1:] = self.data_X[self.idx, :].transpose()
                 continue
                 
             self.net[i].z = self.net[i-1].W.dot(self.net[i-1].a)
@@ -133,24 +134,24 @@ class NeuralNet:
 
 
     # CG = Check Gradient
-    def train(self, X, Y, r, iterations, shuffle=False, CG=True):
-        self.X = X
-        self.Y = Y
+    def train(self, X, Y, r, iterations, objective, shuffle=False, CG=True):
+        self.data_X = X
+        self.data_Y = Y
 
         # clean mse and ll past histories
         self.mse_history = []
         self.ll_history = []
         
         # order to roll over the samples
-        X_ids_order = np.arange(self.X.shape[0], dtype=int)
+        data_X_ids_order = np.arange(self.data_X.shape[0], dtype=int)
         if shuffle:
-            np.random.shuffle(X_ids_order)
+            np.random.shuffle(data_X_ids_order)
 
         # no. of iterations to get an epoch
-        itr_to_epoch = self.X.shape[0] / self.batch_size
+        itr_to_epoch = self.data_X.shape[0] / self.batch_size
         j = 0
         for i in np.arange(iterations):
-            self.idx = X_ids_order[(j*self.batch_size):((j+1)*self.batch_size)]
+            self.idx = data_X_ids_order[(j*self.batch_size):((j+1)*self.batch_size)]
 
             # mark position into data chunks
             j = j + 1
@@ -199,8 +200,8 @@ class NeuralNet:
     
     def train_fitted(self):
         train_fitted = np.array(([]))
-        for i in np.arange(self.X.shape[0], dtype=int):
-            p = self.predict(self.X[i])
+        for i in np.arange(self.data_X.shape[0], dtype=int):
+            p = self.predict(self.data_X[i])
             p = np.round(p)
             train_fitted = np.append(train_fitted, p)
         
@@ -210,7 +211,7 @@ class NeuralNet:
     
     def mean_squared_error(self):
         h = self.net[self.layer_out_id].a
-        y = self.Y[self.idx]
+        y = self.data_Y[self.idx]
         self.mse = 0.5*np.power(y - h, 2)
         # normalize by batch_size
         self.mse = np.sum(self.mse) / self.batch_size
@@ -219,8 +220,8 @@ class NeuralNet:
         
     
     def log_likelihood(self):
-        h = self.predict(self.X[self.idx])
-        y = self.Y[self.idx]
+        h = self.predict(self.data_X[self.idx])
+        y = self.data_Y[self.idx]
         self.ll = y*np.log(h) + (1-y)*np.log(1-h)
         # normalize by batch_size
         self.ll = np.sum(self.ll) / self.batch_size
