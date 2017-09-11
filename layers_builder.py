@@ -71,8 +71,8 @@ class Layer:
 
 
 
-    def check_gradient_computation(self, rtol=1e-3):
-        return np.allclose(self.g, self.ga, rtol=rtol)
+    def check_gradient_computation(self, atol=1e-4):
+        return np.allclose(self.g, self.ga, atol=atol)
 
 
         

@@ -60,13 +60,9 @@ class NeuralNet:
         # now do the same manually
         for i in np.arange(0, self.layer_out_id, dtype=int)[::-1]:
             self.compute_gradient_approximation(i)
-            check = self.net[i].check_gradient_computation(rtol=1)
+            check = self.net[i].check_gradient_computation(atol=1e-4)
             
             if not check:
-                print "g:"
-                print self.net[i].g
-                print "ga:"
-                print self.net[i].ga
                 sys.exit("Error in compute gradient from layer " + str(self.net[i].layer_id))
                 
         print "Gradient Checking is Matching!"
@@ -80,6 +76,7 @@ class NeuralNet:
         
         # output layer
         activation_error = -(self.Y[self.idx] - self.net[self.layer_out_id].a)
+
         activation_derivative = utils.fun_sigmoid_derivative(self.net[self.layer_out_id].a)
         self.net[self.layer_out_id].d = np.multiply(activation_error, activation_derivative)
 
