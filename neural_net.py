@@ -15,7 +15,7 @@ class NeuralNet:
         
         #import pdb; pdb.set_trace();
         self.net = layers_builder.net_constructer(self.layers_dim, self.batch_size)
-        self.err_history = []
+        self.mse_history = []
         self.ll_history = []
         self.mse = None
         self.ll = None
@@ -23,7 +23,6 @@ class NeuralNet:
         self.data_X = None
         self.data_Y = None
         self.data_X_batch = None
-
     
     
     def compute_gradient_approximation(self, i, weight_shift=1e-4):
@@ -138,6 +137,10 @@ class NeuralNet:
     def train(self, X, Y, r, iterations, shuffle=False, CG=True):
         self.X = X
         self.Y = Y
+
+        # clean mse and ll past histories
+        self.mse_history = []
+        self.ll_history = []
         
         # order to roll over the samples
         X_ids_order = np.arange(self.X.shape[0], dtype=int)
@@ -157,20 +160,32 @@ class NeuralNet:
 
             
             self.feed_forward_NN()
+           
+            # register the history of optimization parameters
+            self.optimization_register()
+
             self.update_weights(r)
             
             if CG and i < 5 :
                 self.check_gradient_computation()
                 
-                
+        
+        # compute the optimization values from the last adjusted weights
+        self.optimization_register()
+
+
     
     def predict(self, x_i):
-        # n_predictions control the size of the matrix which is to work
+        # n_predictions control the size of the sample matrix which is to work
+        x_i = x_i.transpose()
+
         if len(x_i.shape) == 1:
             x_i = np.expand_dims(x_i, 1)
 
         n_predictions = x_i.shape[1]
 
+        
+        # feed foward process
         for i in np.arange(0, self.layer_out_id + 1, dtype=int):
             if( i == 0 ):
                 self.net[i].a[1:, :n_predictions] = x_i
@@ -205,9 +220,16 @@ class NeuralNet:
         
     
     def log_likelihood(self):
-        h = self.predict(self.X[self.idx, :])
+        h = self.predict(self.X[self.idx])
         y = self.Y[self.idx]
-        self.ll = y*log(h) + (1-y)*log(1-h)
+        self.ll = y*np.log(h) + (1-y)*np.log(1-h)
         # normalize by batch_size
         self.ll = np.sum(self.ll) / self.batch_size
 
+
+    
+    def optimization_register(self):
+        self.mean_squared_error()
+        self.mse_history.append(self.mse)
+        self.log_likelihood()
+        self.ll_history.append(self.ll)
