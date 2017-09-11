@@ -9,21 +9,20 @@ class NeuralNet:
     def __init__(self,  layers_dim, batch_size):
         self.layers_dim = layers_dim
         self.layer_out_id = len(layers_dim) - 1
+        self.net = layers_builder.net_constructer(self.layers_dim, self.batch_size)
+        
+        self.data_X = None
+        self.data_Y = None
         self.batch_size = batch_size
         self.idx = None
-
+        self.data_X_batch = None
         
-        #import pdb; pdb.set_trace();
-        self.net = layers_builder.net_constructer(self.layers_dim, self.batch_size)
         self.mse_history = []
         self.ll_history = []
         self.mse = None
         self.ll = None
 
-        self.data_X = None
-        self.data_Y = None
-        self.data_X_batch = None
-    
+        
     
     def compute_gradient_approximation(self, i, weight_shift=1e-4):
         W_shape = self.net[i].W.shape
