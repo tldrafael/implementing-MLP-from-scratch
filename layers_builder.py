@@ -54,7 +54,8 @@ class Layer:
 
     def set_activation(self):
         self.a = utils.fun_sigmoid(self.z)
-        if self.bias: self.add_activation_bias()
+        if self.bias: 
+            self.add_activation_bias()
 
 
     
@@ -66,12 +67,17 @@ class Layer:
 
 
 
+    def get_derivative_of_activation(self):
+        return utils.fun_sigmoid_derivative(self.a)
+
+
+
     def update_weights(self, r):
         self.W += -(r*self.g)
 
 
 
-    def check_gradient_computation(self, atol=1e-4):
+    def check_gradient_computation(self, atol):
         return np.allclose(self.g, self.ga, atol=atol)
 
 
@@ -110,8 +116,28 @@ class LayerOutput(Layer):
             self.ga = []
 
 
+
+class ObjLinearRegression(LayerOutput):
+    def __init__(self, n_units_current, layer_id):
+        LayerOutput.__init__(self, n_units_current, layer_id)
+        self.objective = 'linear-reg'
+
+    def set_activation(self):
+        self.a = self.z
+
+    def get_derivative_of_activation(self):
+        return np.ones(shape=self.a.shape)
+
+
+
+class ObjLogisticRegression(LayerOutput):
+    def __init__(self, n_units_current, layer_id):
+        LayerOutput.__init__(self, n_units_current, layer_id)
+        self.objective = 'logistic-reg'
+
+
     
-def net_constructer(layers_dim, batch_size):
+def net_constructer(layers_dim, batch_size, objective):
     if (len(layers_dim) < 2):
         sys.exit("Neural Net must have at least 2 layers")
     
@@ -130,10 +156,17 @@ def net_constructer(layers_dim, batch_size):
 
 
     # second stage: create output layer
-    l = LayerOutput(layers_dim[-1], layer_id=len(layers_dim))
+    l = []
+    if objective == 'linear-reg':
+        l = ObjLinearRegression(layers_dim[-1], layer_id=len(layers_dim))
+    elif objective == 'logistic-reg':
+        l = ObjLogisticRegression(layers_dim[-1], layer_id=len(layers_dim))
+
+
     net.append(l)
-    
     return net
+
+
     
 
 
