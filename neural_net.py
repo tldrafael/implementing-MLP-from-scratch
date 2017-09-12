@@ -177,15 +177,14 @@ class NeuralNet:
 
     
     def predict(self, x_i):
-        x_i = x_i.transpose()
         # n_predictions control the size of the matrix which is to work
         # based on the number of samples sent to predict function
+        x_i = x_i.transpose()
+        
         if len(x_i.shape) == 1:
             x_i = np.expand_dims(x_i, 1)
-
         n_predictions = x_i.shape[1]
 
-        
         # feed foward process
         for i in np.arange(0, self.layer_out_id + 1, dtype=int):
             if( i == 0 ):
@@ -195,7 +194,8 @@ class NeuralNet:
             self.net[i].z[:, :n_predictions] = self.net[i-1].W.dot(self.net[i-1].a[:, :n_predictions])
             self.net[i].set_activation()
         
-        return self.net[self.layer_out_id].a[:, :n_predictions]
+        predictions = self.net[self.layer_out_id].a[:, :n_predictions]
+        return predictions
     
     
     
