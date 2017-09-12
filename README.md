@@ -22,5 +22,9 @@ The restrictions are:
   - All activation functions are `softmax function`;
 
 
+***
 
+To see an example of how train a neural net example, check the [main](main.ipynb) notebook.
+
+  
 
