@@ -1,10 +1,9 @@
 import numpy as np
 
+
 def fun_sigmoid(z):
-    a = 1 / (1 + np.exp(-z))
-    return a
+    return 1 / (1 + np.exp(-z))
 
 
 def fun_sigmoid_derivative(a):
-    derv = np.multiply(a, (1.0 - a))
-    return derv
+    return np.multiply(a, (1.0 - a))
